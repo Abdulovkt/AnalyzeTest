@@ -50,9 +50,9 @@ public class BookExcel {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM");
         String begWeek = "";
         String endWeek = "";
-        begWeek = dateFormat.format(date.getTime());
-        date.add(Calendar.DATE, -7);
         endWeek = dateFormat.format(date.getTime());
+        date.add(Calendar.DATE, -7);
+        begWeek = dateFormat.format(date.getTime()); 
         String weekDate = begWeek + "-" + endWeek;
         return weekDate;
     }

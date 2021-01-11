@@ -16,42 +16,9 @@ import java.io.FileOutputStream;
 public class test {
     public static void main(String[] args) throws IOException {
         BookExcel book=new BookExcel();
-        book.newBook("/home/abdulovkt/Документы/ProjectFiles/testExcel.xls",book.checkBook("2.xls"));
-        //Row row = sheet.createRow(0);
-        //Cell cell=row.createCell(0);
-        //Создание Map и ArrayList для заполнения книги;
-
-
-
-        /*Workbook wb = WorkbookFactory.create(new FileInputStream(new File("2.xls")));
-        Map<Integer, List<String>> rowSheet= new HashMap<Integer,List<String>>();
-        for (Row row:wb.getSheetAt(0)) {
-            ArrayList<String> cellVal = new ArrayList();
-            for (int i=0; i<row.getLastCellNum(); i++) {
-                if(i==2) {
-                    if (row.getCell(i).getNumericCellValue() == 1.0) {
-                        cellVal.add(row.getCell(i).getStringCellValue());
-                    }
-                }
-            }
-            rowSheet.put(row.getRowNum(),cellVal);
-        }*/
-            /*for (Cell cell:row) {
-                printCell(cell);
-                styleTable(wb,cell,row);
-                if(row.getCell(2).getCellType()==CellType.NUMERIC) {
-                    if (row.getCell(2).getNumericCellValue() == 1.0) {
-                        style(wb,  cell, IndexedColors.RED1, BorderStyle.THIN);
-                    }
-                }
-            }
-            System.out.println();
-        }
-        FileOutputStream file = new FileOutputStream("2.xls");
-        wb.write(file);
-        wb.close();
-        file.close();*/
+        book.newBook("testExcel.xls",book.checkBook("2.xls"));
     }
+
     public static  String getCell(Cell cell){
         String result="";
         switch (cell.getCellType()) {
