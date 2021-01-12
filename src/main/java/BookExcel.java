@@ -1,5 +1,6 @@
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,26 +20,27 @@ public class BookExcel {
         this.name = name;
     }
 
-    public void newBook(String name, Map map) throws IOException {
+    public void newBook(String name, List list) throws IOException {
         int countRow = 0;
         Map<Integer, List<String>> mapCheckBook = new HashMap<Integer, List<String>>();
-        mapCheckBook = map;
         List<String> valCell;
         Calendar thisDay = new GregorianCalendar();
         HSSFWorkbook wb = new HSSFWorkbook();
         nameSheet = "Трудозатраты за " + getWeekDate(thisDay);
         System.out.println(nameSheet);
         Sheet sheet = wb.createSheet(nameSheet);
-        //style(wb,);
         //тест по записи Map в книгу
-        for (Map.Entry<Integer, List<String>> valueCell : mapCheckBook.entrySet()) {
-            Row row = sheet.createRow(countRow);
-            valCell = new ArrayList<String>(valueCell.getValue());
-            for (int i = 0; i < valCell.size(); i++) {
-                Cell cell = row.createCell(i);
-                cell.setCellValue(valCell.get(i));
+        for(int i=0;i<list.size();i++) {
+            Map<Integer,List<String>>writeCells=(Map)list.get(i);
+            for (Map.Entry<Integer, List<String>> valueCell : writeCells.entrySet()) {
+                Row row = sheet.createRow(countRow);
+                valCell = new ArrayList<String>(valueCell.getValue());
+                for (int j = 0; j < valCell.size(); j++) {
+                    Cell cell = row.createCell(j);
+                    cell.setCellValue(valCell.get(j));
+                }
+                countRow++;
             }
-            countRow++;
         }
         //--------------------------
         FileOutputStream file = new FileOutputStream(name);
@@ -52,7 +54,7 @@ public class BookExcel {
         String endWeek = "";
         endWeek = dateFormat.format(date.getTime());
         date.add(Calendar.DATE, -7);
-        begWeek = dateFormat.format(date.getTime()); 
+        begWeek = dateFormat.format(date.getTime());
         String weekDate = begWeek + "-" + endWeek;
         return weekDate;
     }
@@ -78,23 +80,43 @@ public class BookExcel {
         }
     }
 
-    public Map checkBook(String name) throws IOException {
+    public List checkBook(String name) throws IOException {
+        List<Map>dateSheet=new ArrayList<Map>();
         Workbook wb = WorkbookFactory.create(new FileInputStream(new File(name)));
+        //Sheet sheet=wb.getSheetAt(0);
+        dateSheet.add(bookFilter(wb));
         Map<Integer, List<String>> rowSheet = new HashMap<Integer, List<String>>();
         for (Row row : wb.getSheetAt(0)) {
             List<String> cellVal = new ArrayList();
             for (int i = 0; i < row.getLastCellNum(); i++) {
                 if (row.getCell(2, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL)==null) {
-                    cellVal.add(getCell(row.getCell(i)));}
-                }
-                if(cellVal.size() >0) {
-                rowSheet.put(row.getRowNum(), cellVal);
+                    cellVal.add(getCell(row.getCell(i)));
                 }
             }
-
-        return rowSheet;
+            if(cellVal.size() >0) {
+                rowSheet.put(row.getRowNum(), cellVal);
+            }
+        }
+        dateSheet.add(rowSheet);
+        return dateSheet;
     }
-
+    public Map bookFilter(Workbook wb){
+        Map<Integer, List<String>> filterSheet = new HashMap<Integer, List<String>>();
+        for (Row row : wb.getSheetAt(0)) {
+            List<String> cellVal = new ArrayList();
+            for (int i = 0; i < row.getLastCellNum(); i++) {
+                if( isString(row.getCell(1))) {
+                    if (row.getCell(1).getStringCellValue().equals("Решение")) {
+                        cellVal.add(getCell(row.getCell(i)));
+                    }
+                }
+            }
+            if(cellVal.size() >0) {
+                filterSheet.put(row.getRowNum(), cellVal);
+            }
+        }
+        return filterSheet;
+    }
 
 
     public String getCell(Cell cell) {
@@ -114,12 +136,15 @@ public class BookExcel {
         return result;
     }
 
-    public boolean isInteger(Cell cell) {
+    public boolean isString(Cell cell) {
         boolean check=false;
-        if (cell.getCellType() == CellType.NUMERIC) {
+        if (cell.getCellType() == CellType.STRING) {
             check=true;
         }
         return check;
     }
+
+
+
 }
 
