@@ -85,7 +85,7 @@ public class BookExcel {
         Workbook wb = WorkbookFactory.create(new FileInputStream(new File(name)));
         //Sheet sheet=wb.getSheetAt(0);
         dateSheet.add(bookFilter(wb));
-        Map<Integer, List<String>> rowSheet = new HashMap<Integer, List<String>>();
+        /*Map<Integer, List<String>> rowSheet = new HashMap<Integer, List<String>>();
         for (Row row : wb.getSheetAt(0)) {
             List<String> cellVal = new ArrayList();
             for (int i = 0; i < row.getLastCellNum(); i++) {
@@ -97,7 +97,7 @@ public class BookExcel {
                 rowSheet.put(row.getRowNum(), cellVal);
             }
         }
-        dateSheet.add(rowSheet);
+        dateSheet.add(rowSheet);*/
         return dateSheet;
     }
     public Map bookFilter(Workbook wb){
@@ -105,9 +105,9 @@ public class BookExcel {
         for (Row row : wb.getSheetAt(0)) {
             List<String> cellVal = new ArrayList();
             for (int i = 0; i < row.getLastCellNum(); i++) {
-                if( isString(row.getCell(1))) {
-                    if (row.getCell(1).getStringCellValue().equals("Решение")) {
-                        cellVal.add(getCell(row.getCell(i)));
+                if( isString(row.getCell(2))) {
+                    if (row.getCell(2).getStringCellValue().equals("Результат")) {
+                        cellVal.add(String.valueOf(getCell(row.getCell(i))));
                     }
                 }
             }
@@ -129,7 +129,7 @@ public class BookExcel {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     result = cell.getDateCellValue().toString();
                 } else {
-                    result = Integer.toString((int) cell.getNumericCellValue());
+                    result = Double.toString(cell.getNumericCellValue());
                 }
                 break;
         }
@@ -138,12 +138,21 @@ public class BookExcel {
 
     public boolean isString(Cell cell) {
         boolean check=false;
-        if (cell.getCellType() == CellType.STRING) {
-            check=true;
+        try {
+            if (cell.getCellType() == CellType.STRING) {
+                check=true;
+            }
+        }catch (NullPointerException e){
+            return false;
         }
         return check;
     }
-
+    public boolean isInteger(Cell cell){
+        if(cell.getCellType()==CellType.NUMERIC){
+            return true;
+        }else
+            return false;
+    }
 
 
 }
