@@ -12,8 +12,10 @@ import java.util.*;
 public class BookExcel {
     String name;
     String nameSheet;
+    Map<Integer, List<String>> filterSheet;
 
     public BookExcel() {
+        filterSheet= new LinkedHashMap<Integer, List<String>>();
     }
 
     public void setName(String name) {
@@ -21,7 +23,7 @@ public class BookExcel {
     }
 
     public void newBook(String name, List list) throws IOException {
-        int countRow = 0;
+        int countRow = 1;
         Map<Integer, List<String>> mapCheckBook = new HashMap<Integer, List<String>>();
         List<String> valCell;
         Calendar thisDay = new GregorianCalendar();
@@ -84,7 +86,8 @@ public class BookExcel {
         List<Map>dateSheet=new ArrayList<Map>();
         Workbook wb = WorkbookFactory.create(new FileInputStream(new File(name)));
         //Sheet sheet=wb.getSheetAt(0);
-        dateSheet.add(bookFilter(wb));
+        bookFilter(wb);
+        dateSheet.add(filterSheet);
         /*Map<Integer, List<String>> rowSheet = new HashMap<Integer, List<String>>();
         for (Row row : wb.getSheetAt(0)) {
             List<String> cellVal = new ArrayList();
@@ -100,10 +103,13 @@ public class BookExcel {
         dateSheet.add(rowSheet);*/
         return dateSheet;
     }
-    public Map bookFilter(Workbook wb){
-        Map<Integer, List<String>> filterSheet = new HashMap<Integer, List<String>>();
-        for (Row row : wb.getSheetAt(0)) {
-            List<String> cellVal = new ArrayList();
+    public void bookFilter(Workbook wb){
+        //Map<Integer, List<String>> filterSheet = new HashMap<Integer, List<String>>();
+        Sheet sheet=wb.getSheetAt(0);
+        sheetFind(sheet,"Сотрудники",0);
+        sheetFind(sheet, "Результат", 2);
+        /*for (Row row : wb.getSheetAt(0)) {
+            List<String> cellVal = new ArrayList<String>();
             for (int i = 0; i < row.getLastCellNum(); i++) {
                 if( isString(row.getCell(2))) {
                     if (row.getCell(2).getStringCellValue().equals("Результат")) {
@@ -114,11 +120,34 @@ public class BookExcel {
             if(cellVal.size() >0) {
                 filterSheet.put(row.getRowNum(), cellVal);
             }
-        }
-        return filterSheet;
+        }*/
+        //return filterSheet;
     }
 
+    public void sheetFind(Sheet sheet, String name, int numCell){
 
+
+        for(int j=0;j<sheet.getLastRowNum();j++) {
+            List<String> cellVal = new ArrayList<String>();
+            Row row = sheet.getRow(j);
+            if(isNullCell(row.getCell(numCell))!=true) {
+                for (int i = 0; i < row.getLastCellNum(); i++) {
+                    if (isString(row.getCell(numCell))) {
+                        if (row.getCell(numCell).getStringCellValue().equals(name)) {
+                           if(row.getCell(i).getCellType() == CellType.NUMERIC) {
+                                cellVal.add(String.format("%.2f",row.getCell(i).getNumericCellValue()));
+                            }else {
+                               cellVal.add(row.getCell(i).getStringCellValue());
+                           }
+                        }
+                    }
+                }
+            }
+            if(cellVal.size()>0) {
+                filterSheet.put(row.getRowNum(), cellVal);
+            }
+        }
+    }
     public String getCell(Cell cell) {
         String result = "";
         switch (cell.getCellType()) {
@@ -147,13 +176,12 @@ public class BookExcel {
         }
         return check;
     }
-    public boolean isInteger(Cell cell){
-        if(cell.getCellType()==CellType.NUMERIC){
+    public  boolean isNullCell(Cell cell){
+        if(cell == null || cell.getCellType() == CellType.BLANK){
             return true;
         }else
             return false;
     }
-
 
 }
 
