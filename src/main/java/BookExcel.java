@@ -7,6 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 import java.util.*;
 
 public class BookExcel {
@@ -106,8 +107,10 @@ public class BookExcel {
     public void bookFilter(Workbook wb){
         //Map<Integer, List<String>> filterSheet = new HashMap<Integer, List<String>>();
         Sheet sheet=wb.getSheetAt(0);
+        sheetFind(sheet,"Календарный день",12);
         sheetFind(sheet,"Сотрудники",0);
         sheetFind(sheet, "Результат", 2);
+
         /*for (Row row : wb.getSheetAt(0)) {
             List<String> cellVal = new ArrayList<String>();
             for (int i = 0; i < row.getLastCellNum(); i++) {
@@ -131,12 +134,17 @@ public class BookExcel {
             List<String> cellVal = new ArrayList<String>();
             Row row = sheet.getRow(j);
             if(isNullCell(row.getCell(numCell))!=true) {
+                DateFormat dateFormat = new SimpleDateFormat("dd.MM");
                 for (int i = 0; i < row.getLastCellNum(); i++) {
                     if (isString(row.getCell(numCell))) {
                         if (row.getCell(numCell).getStringCellValue().equals(name)) {
                            if(row.getCell(i).getCellType() == CellType.NUMERIC) {
+                               if(DateUtil.isCellDateFormatted(row.getCell(i))){
+                                   cellVal.add(String.valueOf(dateFormat.format(row.getCell(i).getDateCellValue())));
+                               }else{
                                 cellVal.add(String.format("%.2f",row.getCell(i).getNumericCellValue()));
-                            }else {
+                               }
+                            }else{
                                cellVal.add(row.getCell(i).getStringCellValue());
                            }
                         }
@@ -144,6 +152,9 @@ public class BookExcel {
                 }
             }
             if(cellVal.size()>0) {
+                for(int l=0;l<10;l++){
+                    cellVal.remove(3);
+                }
                 filterSheet.put(row.getRowNum(), cellVal);
             }
         }
