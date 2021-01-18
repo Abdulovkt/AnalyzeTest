@@ -1,11 +1,13 @@
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
 import java.util.*;
@@ -13,10 +15,10 @@ import java.util.*;
 public class BookExcel {
     String name;
     String nameSheet;
-    Map<Integer, List<String>> filterSheet;
+    Map<Integer, List<Object>> filterSheet;
 
     public BookExcel() {
-        filterSheet= new LinkedHashMap<Integer, List<String>>();
+        filterSheet= new LinkedHashMap<Integer, List<Object>>();
     }
 
     public void setName(String name) {
@@ -25,8 +27,8 @@ public class BookExcel {
 
     public void newBook(String name, List list) throws IOException {
         int countRow = 1;
-        Map<Integer, List<String>> mapCheckBook = new HashMap<Integer, List<String>>();
-        List<String> valCell;
+        //Map<Integer, List<Object>> mapCheckBook = new HashMap<Integer, List<Object>>();
+        List<Object> valCell;
         Calendar thisDay = new GregorianCalendar();
         HSSFWorkbook wb = new HSSFWorkbook();
         nameSheet = "Трудозатраты за " + getWeekDate(thisDay);
@@ -34,17 +36,30 @@ public class BookExcel {
         Sheet sheet = wb.createSheet(nameSheet);
         //тест по записи Map в книгу
         for(int i=0;i<list.size();i++) {
-            Map<Integer,List<String>>writeCells=(Map)list.get(i);
-            for (Map.Entry<Integer, List<String>> valueCell : writeCells.entrySet()) {
+            Map<Integer,List<Object>>writeCells=(Map)list.get(i);
+            for (Map.Entry<Integer, List<Object>> valueCell : writeCells.entrySet()) {
                 Row row = sheet.createRow(countRow);
-                valCell = new ArrayList<String>(valueCell.getValue());
+                valCell = new ArrayList<Object>(valueCell.getValue());
                 for (int j = 0; j < valCell.size(); j++) {
                     Cell cell = row.createCell(j);
-                    cell.setCellValue(valCell.get(j));
+                    if(valCell.get(j) instanceof String){
+                        cell.setCellValue((String)valCell.get(j));
+                    }else if(valCell.get(j) instanceof Double){
+                        cell.setCellValue((Double)valCell.get(j));
+                    }
                 }
                 countRow++;
             }
             formattedBook(sheet);
+            checkWrongTime(sheet);
+            Row rowNotes=sheet.createRow(sheet.getLastRowNum()+2);
+            Row rowNotes1=sheet.createRow(sheet.getLastRowNum()+1);
+            Cell cell =rowNotes.createCell(0);
+            Cell cell1 =rowNotes1.createCell(0);
+            cellColor(sheet,cell,IndexedColors.RED.getIndex());
+            cellColor(sheet,cell1,IndexedColors.YELLOW.getIndex());
+            CellUtil.createCell(rowNotes,1,"Неверно списано время");
+            CellUtil.createCell(rowNotes1,1,"отпуск");
         }
         //--------------------------
         FileOutputStream file = new FileOutputStream(name);
@@ -137,48 +152,72 @@ public class BookExcel {
         return dateSheet;
     }
     public void bookFilter(Workbook wb){
-        //Map<Integer, List<String>> filterSheet = new HashMap<Integer, List<String>>();
         Sheet sheet=wb.getSheetAt(0);
         sheetFind(sheet,"Календарный день",12);
         sheetFind(sheet,"Сотрудники",0);
         sheetFind(sheet, "Результат", 2);
-
-        /*for (Row row : wb.getSheetAt(0)) {
-            List<String> cellVal = new ArrayList<String>();
-            for (int i = 0; i < row.getLastCellNum(); i++) {
-                if( isString(row.getCell(2))) {
-                    if (row.getCell(2).getStringCellValue().equals("Результат")) {
-                        cellVal.add(String.valueOf(getCell(row.getCell(i))));
+    }
+public void cellColor(Sheet sheet, Cell cell, short indexColor){
+    CellStyle cellColor=sheet.getWorkbook().createCellStyle();
+    cellColor.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+    cellColor.setFillForegroundColor(indexColor);
+    cell.setCellStyle(cellColor);
+}
+    public void checkWrongTime(Sheet sheet){
+        Map<Integer,List<Double>>employes=new HashMap<Integer, List<Double>>();
+        List<Double>timeChange= Arrays.asList(4.00,7.00,11.00,8.00);
+        List<Double>restTime=Arrays.asList(8.25,8.0,7.00);
+        List<Double>substitution=Arrays.asList(4.00,7.00,11.00,8.25);
+        employes.put(3701140,timeChange);
+        employes.put(3701277,timeChange);
+        employes.put(3703077,timeChange);
+        employes.put(3703422,timeChange);
+        employes.put(3703149,substitution);
+        employes.put(3703672,substitution);
+        employes.put(3701146,restTime);
+        employes.put(3701916,restTime);
+        employes.put(3703413,restTime);
+        DataFormatter formatter = new DataFormatter();
+        for(int i=3;i<=sheet.getLastRowNum();i++){
+            Row row=sheet.getRow(i);
+            for(Map.Entry<Integer,List<Double>>mapEmploye: employes.entrySet()){
+                if(Integer.parseInt(formatter.formatCellValue(row.getCell(0)))==mapEmploye.getKey()){
+                    ArrayList<Double>emploeysTime=new ArrayList<Double>(mapEmploye.getValue());
+                    for(int j=3;j<11;j++) {
+                        if (!isString(row.getCell(j))){
+                            int count=0;
+                            for (double emploey:emploeysTime) {
+                                    if(emploey!=(Double)getCell(row.getCell(j))){
+                                        count++;
+                                    }
+                                    if(count==emploeysTime.size()){
+                                        cellColor(sheet, row.getCell(j), IndexedColors.RED.getIndex());
+                                    }
+                            }
+                            if(row.getCell(j).getNumericCellValue()==8.00){
+                                cellColor(sheet, row.getCell(j), IndexedColors.YELLOW.getIndex());
+                            }
+                        }
                     }
                 }
+
+
             }
-            if(cellVal.size() >0) {
-                filterSheet.put(row.getRowNum(), cellVal);
-            }
-        }*/
-        //return filterSheet;
+        }
+
     }
 
     public void sheetFind(Sheet sheet, String name, int numCell){
 
 
         for(int j=0;j<sheet.getLastRowNum();j++) {
-            List<String> cellVal = new ArrayList<String>();
+            List<Object> cellVal = new ArrayList<Object>();
             Row row = sheet.getRow(j);
             if(isNullCell(row.getCell(numCell))!=true) {
-                DateFormat dateFormat = new SimpleDateFormat("dd.MM");
                 for (int i = 0; i < row.getLastCellNum(); i++) {
                     if (isString(row.getCell(numCell))) {
                         if (row.getCell(numCell).getStringCellValue().equals(name)) {
-                           if(row.getCell(i).getCellType() == CellType.NUMERIC) {
-                               if(DateUtil.isCellDateFormatted(row.getCell(i))){
-                                   cellVal.add(String.valueOf(dateFormat.format(row.getCell(i).getDateCellValue())));
-                               }else{
-                                cellVal.add(String.format("%.2f",row.getCell(i).getNumericCellValue()));
-                               }
-                            }else{
-                               cellVal.add(row.getCell(i).getStringCellValue());
-                           }
+                            cellVal.add(getCell(row.getCell(i)));
                         }
                     }
                 }
@@ -191,17 +230,20 @@ public class BookExcel {
             }
         }
     }
-    public String getCell(Cell cell) {
-        String result = "";
+    public Object getCell(Cell cell) {
+        Object result = "";
+        DecimalFormat dFormat= new DecimalFormat("#,##");
+        SimpleDateFormat dateFormat=new SimpleDateFormat("dd.MM");
         switch (cell.getCellType()) {
             case STRING:
                 result = cell.getRichStringCellValue().getString();
                 break;
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
-                    result = cell.getDateCellValue().toString();
+                    result=String.valueOf(dateFormat.format(cell.getDateCellValue()));
                 } else {
-                    result = Double.toString(cell.getNumericCellValue());
+                    //result=String.format("%.2f",cell.getNumericCellValue());
+                    result=Math.round(cell.getNumericCellValue()*100)/100.0;
                 }
                 break;
         }
