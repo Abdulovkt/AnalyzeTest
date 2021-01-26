@@ -9,16 +9,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.text.DateFormat;
 import java.util.*;
 
 public class BookExcel {
     String name;
     String nameSheet;
     Map<Integer, List<Object>> filterSheet;
+    Map<String,List<Object>> projects;
 
     public BookExcel() {
         filterSheet= new LinkedHashMap<Integer, List<Object>>();
+        projects=new HashMap<String, List<Object>>();
     }
 
     public void setName(String name) {
@@ -27,7 +28,6 @@ public class BookExcel {
 
     public void newBook(String name, List list) throws IOException {
         int countRow = 1;
-        //Map<Integer, List<Object>> mapCheckBook = new HashMap<Integer, List<Object>>();
         List<Object> valCell;
         Calendar thisDay = new GregorianCalendar();
         HSSFWorkbook wb = new HSSFWorkbook();
@@ -60,6 +60,36 @@ public class BookExcel {
             cellColor(sheet,cell1,IndexedColors.YELLOW.getIndex());
             CellUtil.createCell(rowNotes,1,"Неверно списано время");
             CellUtil.createCell(rowNotes1,1,"отпуск");
+            Row rowNameAnalize=sheet.createRow(sheet.getLastRowNum()+2);
+            Cell cellNameAnalize=rowNameAnalize.createCell(0);
+            sheet.addMergedRegion(new CellRangeAddress(rowNameAnalize.getRowNum(),rowNameAnalize.getRowNum(),0,1));
+            cellNameAnalize.setCellValue("Анализ трудозатрат по проектам");
+            countRow=sheet.getLastRowNum()+1;
+            CellStyle cellStyle=sheet.getWorkbook().createCellStyle();
+            cellStyle.setAlignment(HorizontalAlignment.CENTER);
+            cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            cellStyle.setBorderBottom(BorderStyle.THIN);
+            cellStyle.setBorderLeft(BorderStyle.THIN);
+            cellStyle.setBorderRight(BorderStyle.THIN);
+            cellStyle.setBorderTop(BorderStyle.THIN);
+            cellStyle.setWrapText(true);
+            for (Map.Entry<String, List<Object>> project : projects.entrySet()) {
+                Row row = sheet.createRow(countRow);
+                valCell = new ArrayList<Object>(project.getValue());
+                for (int j = 0; j < valCell.size(); j++) {
+                    Cell cellAnalize = row.createCell(j);
+                    if(valCell.get(j) instanceof String){
+                        cellAnalize.setCellValue((String)valCell.get(j));
+                    }else if(valCell.get(j) instanceof Double){
+                        cellAnalize.setCellValue((Double)valCell.get(j));
+                    }
+                    sheet.autoSizeColumn(0);
+                    cellAnalize.setCellStyle(cellStyle);
+                    //sheet.setColumnWidth(j,3350);
+
+                }
+                countRow++;
+            }
         }
         //--------------------------
         FileOutputStream file = new FileOutputStream(name);
@@ -130,10 +160,69 @@ public class BookExcel {
         }
     }
 
+    public void effortAnalysis(Sheet sheet){
+
+        //projects.put(746,"Не присвоено");
+        //projects.put(748,"Не присвоено");
+        //projects.put(750,"Не присвоено");
+        //int count=0;
+            for (Row row:sheet.getWorkbook().getSheetAt(0)) {
+                List<Object>project=new ArrayList<Object>();
+                if(row.getRowNum()>4&&row.getCell(7).getStringCellValue().equals("Результат")!=true) {
+                    if (!isNullCell(row.getCell(4))&&row.getCell(4).getStringCellValue().equals("Результат")!=true
+                            &&row.getCell(4).getStringCellValue().equals("#")!=true) {
+                        switch (Integer.parseInt(row.getCell(4).getStringCellValue())) {
+                            case 746:
+                                if (row.getCell(7).getStringCellValue().equals("Не присвоено")) {
+                                    project.add(getCell(row.getCell(3)));
+                                    project.add(getCell(row.getCell(1)));
+                                    project.add(getCell(row.getCell(4)));
+                                    project.add(getCell(row.getCell(6)));
+                                    project.add(getCell(row.getCell(7)));
+                                }
+                                break;
+                            case 748:
+                                if (row.getCell(7).getStringCellValue().equals("Не присвоено")) {
+                                    project.add(getCell(row.getCell(3)));
+                                    project.add(getCell(row.getCell(1)));
+                                    project.add(getCell(row.getCell(4)));
+                                    project.add(getCell(row.getCell(6)));
+                                    project.add(getCell(row.getCell(7)));
+                                }
+                                break;
+                            case 750:
+                                if (row.getCell(7).getStringCellValue().equals("Не присвоено")) {
+                                    project.add(getCell(row.getCell(3)));
+                                    project.add(getCell(row.getCell(1)));
+                                    project.add(getCell(row.getCell(4)));
+                                    project.add(getCell(row.getCell(6)));
+                                    project.add(getCell(row.getCell(7)));
+                                }
+                                break;
+                            case 745:
+                                if (row.getCell(6).getStringCellValue().equals("Газпром")) {
+                                    project.add(getCell(row.getCell(3)));
+                                    project.add(getCell(row.getCell(1)));
+                                    project.add(getCell(row.getCell(4)));
+                                    project.add(getCell(row.getCell(6)));
+                                    project.add(getCell(row.getCell(7)));
+                                }
+                                break;
+                        }
+                        if (project.size() > 0) {
+                            projects.put((String)getCell(row.getCell(3)), project);
+                            //count++;
+                        }
+                    }
+                }
+            }
+    }
+
     public List checkBook(String name) throws IOException {
         List<Map>dateSheet=new ArrayList<Map>();
         Workbook wb = WorkbookFactory.create(new FileInputStream(new File(name)));
         //Sheet sheet=wb.getSheetAt(0);
+        effortAnalysis(wb.getSheetAt(0));
         bookFilter(wb);
         dateSheet.add(filterSheet);
         /*Map<Integer, List<String>> rowSheet = new HashMap<Integer, List<String>>();
@@ -161,6 +250,12 @@ public void cellColor(Sheet sheet, Cell cell, short indexColor){
     CellStyle cellColor=sheet.getWorkbook().createCellStyle();
     cellColor.setFillPattern(FillPatternType.SOLID_FOREGROUND);
     cellColor.setFillForegroundColor(indexColor);
+    cellColor.setAlignment(HorizontalAlignment.CENTER);
+    cellColor.setVerticalAlignment(VerticalAlignment.CENTER);
+    cellColor.setBorderBottom(BorderStyle.THIN);
+    cellColor.setBorderLeft(BorderStyle.THIN);
+    cellColor.setBorderRight(BorderStyle.THIN);
+    cellColor.setBorderTop(BorderStyle.THIN);
     cell.setCellStyle(cellColor);
 }
     public void checkWrongTime(Sheet sheet){
