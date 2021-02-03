@@ -220,7 +220,7 @@ public class BookExcel {
         for(int j=0;j<sheet.getLastRowNum();j++) {
             List<Object> cellVal = new ArrayList<Object>();
             Row row = sheet.getRow(j);
-            if(isNullCell(row.getCell(numCell))!=true) {
+            if(isNullRow(row)!=true&&(isNullCell(row.getCell(numCell))!=true)) {
                 for (int i = 0; i < row.getLastCellNum(); i++) {
                     if (isString(row.getCell(numCell))) {
                         if (row.getCell(numCell).getStringCellValue().equals(name)) {
@@ -271,6 +271,14 @@ public class BookExcel {
             return true;
         }else
             return false;
+    }
+    public boolean isNullRow(Row row){
+        if(row==null){
+            return true;
+        }else
+            {
+            return false;
+        }
     }
 
 }
