@@ -7,12 +7,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class BookExcel {
-    String name;
+    //String name;
     String nameSheet;
     Map<Integer, List<Object>> filterSheet;
     Map<String,List<Object>> projects;
@@ -20,10 +19,6 @@ public class BookExcel {
     public BookExcel() {
         filterSheet= new LinkedHashMap<Integer, List<Object>>();
         projects=new HashMap<String, List<Object>>();
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public void newBook(String name, List list) throws IOException {
@@ -34,7 +29,8 @@ public class BookExcel {
         nameSheet = "Трудозатраты за " + getWeekDate(thisDay);
         System.out.println(nameSheet);
         Sheet sheet = wb.createSheet(nameSheet);
-        //тест по записи Map в книгу
+        FormatingExcelBook formatExcel = new FormatingExcelBook(sheet);
+        //TODO сделать отдельный метод по записи в лист книги.
         for(int i=0;i<list.size();i++) {
             Map<Integer,List<Object>>writeCells=(Map)list.get(i);
             for (Map.Entry<Integer, List<Object>> valueCell : writeCells.entrySet()) {
@@ -50,7 +46,7 @@ public class BookExcel {
                 }
                 countRow++;
             }
-            formattedBook(sheet);
+            formatExcel.formatListExcel();
             checkWrongTime(sheet);
             Row rowNotes=sheet.createRow(sheet.getLastRowNum()+2);
             Row rowNotes1=sheet.createRow(sheet.getLastRowNum()+1);
@@ -65,14 +61,6 @@ public class BookExcel {
             sheet.addMergedRegion(new CellRangeAddress(rowNameAnalize.getRowNum(),rowNameAnalize.getRowNum(),0,1));
             cellNameAnalize.setCellValue("Анализ трудозатрат по проектам");
             countRow=sheet.getLastRowNum()+1;
-            CellStyle cellStyle=sheet.getWorkbook().createCellStyle();
-            cellStyle.setAlignment(HorizontalAlignment.CENTER);
-            cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            cellStyle.setBorderBottom(BorderStyle.THIN);
-            cellStyle.setBorderLeft(BorderStyle.THIN);
-            cellStyle.setBorderRight(BorderStyle.THIN);
-            cellStyle.setBorderTop(BorderStyle.THIN);
-            cellStyle.setWrapText(true);
             for (Map.Entry<String, List<Object>> project : projects.entrySet()) {
                 Row row = sheet.createRow(countRow);
                 valCell = new ArrayList<Object>(project.getValue());
@@ -84,49 +72,16 @@ public class BookExcel {
                         cellAnalize.setCellValue((Double)valCell.get(j));
                     }
                     sheet.autoSizeColumn(0);
-                    cellAnalize.setCellStyle(cellStyle);
-                    //sheet.setColumnWidth(j,3350);
-
+                    cellAnalize.setCellStyle(formatExcel.customizeStyleSheet());
                 }
                 countRow++;
             }
         }
-        //--------------------------
         FileOutputStream file = new FileOutputStream(name);
         wb.write(file);
         wb.close();
     }
-    public void formattedBook(Sheet sheet){
-        sheet.addMergedRegion(new CellRangeAddress(1,1,0,2));
-        Row row = sheet.getRow(1);
-        Cell cell = row.getCell(0);
-        cell.setCellValue("Календарный день");
-        sheet.addMergedRegion(new CellRangeAddress(2,2,0,1));
-        CellStyle cellStyle=sheet.getWorkbook().createCellStyle();
-        cellStyle.setAlignment(HorizontalAlignment.CENTER);
-        cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        cellStyle.setBorderBottom(BorderStyle.THIN);
-        cellStyle.setBorderLeft(BorderStyle.THIN);
-        cellStyle.setBorderRight(BorderStyle.THIN);
-        cellStyle.setBorderTop(BorderStyle.THIN);
-        cellStyle.setWrapText(true);
-        for(int j=0;j<3;j++){
-            sheet.autoSizeColumn(j);
-        }
-        for (Row row1 : sheet.getWorkbook().getSheetAt(0)) {
-            if(row1.getRowNum()==1||row1.getRowNum()==2){
-                row1.setHeight((short) 700);
-            }
-            for (int i = 0; i < row.getLastCellNum(); i++) {
-                cell = row1.getCell(i);
-                cell.setCellStyle(cellStyle);
-                if(i>2){
-                    sheet.setColumnWidth(i,3350);
-                }
-            }
-        }
 
-    }
     public String getWeekDate(Calendar date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM");
         String begWeek = "";
@@ -138,34 +93,7 @@ public class BookExcel {
         return weekDate;
     }
 
-    public void style(Workbook wb, Cell cell, IndexedColors color, BorderStyle bord) {
-
-        CellStyle cellStyle = wb.createCellStyle();
-        cellStyle.setAlignment(HorizontalAlignment.CENTER);
-        cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-        cellStyle.setBorderBottom(bord);
-        cellStyle.setBorderLeft(bord);
-        cellStyle.setBorderRight(bord);
-        cellStyle.setBorderTop(bord);
-        cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-        cellStyle.setFillForegroundColor(color.getIndex());
-        cell.setCellStyle(cellStyle);
-    }
-
-    public void styleTable(Workbook wb, Cell cell, Row row) {
-        if (row.getRowNum() == 0) {
-            style(wb, cell, IndexedColors.BLUE_GREY, BorderStyle.MEDIUM);
-        } else {
-            style(wb, cell, IndexedColors.SKY_BLUE, BorderStyle.THIN);
-        }
-    }
-
     public void effortAnalysis(Sheet sheet){
-
-        //projects.put(746,"Не присвоено");
-        //projects.put(748,"Не присвоено");
-        //projects.put(750,"Не присвоено");
-        //int count=0;
             for (Row row:sheet.getWorkbook().getSheetAt(0)) {
                 List<Object>project=new ArrayList<Object>();
                 if(row.getRowNum()>4&&row.getCell(7).getStringCellValue().equals("Результат")!=true) {
@@ -221,32 +149,20 @@ public class BookExcel {
     public List checkBook(String name) throws IOException {
         List<Map>dateSheet=new ArrayList<Map>();
         Workbook wb = WorkbookFactory.create(new FileInputStream(new File(name)));
-        //Sheet sheet=wb.getSheetAt(0);
         effortAnalysis(wb.getSheetAt(0));
-        bookFilter(wb);
+        bookFilterTime(wb);
         dateSheet.add(filterSheet);
-        /*Map<Integer, List<String>> rowSheet = new HashMap<Integer, List<String>>();
-        for (Row row : wb.getSheetAt(0)) {
-            List<String> cellVal = new ArrayList();
-            for (int i = 0; i < row.getLastCellNum(); i++) {
-                if (row.getCell(2, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL)==null) {
-                    cellVal.add(getCell(row.getCell(i)));
-                }
-            }
-            if(cellVal.size() >0) {
-                rowSheet.put(row.getRowNum(), cellVal);
-            }
-        }
-        dateSheet.add(rowSheet);*/
         return dateSheet;
     }
-    public void bookFilter(Workbook wb){
+
+    public void bookFilterTime(Workbook wb){
         Sheet sheet=wb.getSheetAt(0);
         sheetFind(sheet,"Календарный день",12);
         sheetFind(sheet,"Сотрудники",0);
         sheetFind(sheet, "Результат", 2);
     }
-public void cellColor(Sheet sheet, Cell cell, short indexColor){
+
+    public void cellColor(Sheet sheet, Cell cell, short indexColor){
     CellStyle cellColor=sheet.getWorkbook().createCellStyle();
     cellColor.setFillPattern(FillPatternType.SOLID_FOREGROUND);
     cellColor.setFillForegroundColor(indexColor);
@@ -258,6 +174,7 @@ public void cellColor(Sheet sheet, Cell cell, short indexColor){
     cellColor.setBorderTop(BorderStyle.THIN);
     cell.setCellStyle(cellColor);
 }
+
     public void checkWrongTime(Sheet sheet){
         Map<Integer,List<Double>>employes=new HashMap<Integer, List<Double>>();
         List<Double>timeChange= Arrays.asList(4.00,7.00,11.00,8.00);
@@ -281,8 +198,8 @@ public void cellColor(Sheet sheet, Cell cell, short indexColor){
                     for(int j=3;j<11;j++) {
                         if (!isString(row.getCell(j))){
                             int count=0;
-                            for (double emploey:emploeysTime) {
-                                    if(emploey!=(Double)getCell(row.getCell(j))){
+                            for (double emploeyTime:emploeysTime) {
+                                    if(emploeyTime!=(Double)getCell(row.getCell(j))){
                                         count++;
                                     }
                                     if(count==emploeysTime.size()){
@@ -295,16 +212,11 @@ public void cellColor(Sheet sheet, Cell cell, short indexColor){
                         }
                     }
                 }
-
-
             }
         }
-
     }
 
     public void sheetFind(Sheet sheet, String name, int numCell){
-
-
         for(int j=0;j<sheet.getLastRowNum();j++) {
             List<Object> cellVal = new ArrayList<Object>();
             Row row = sheet.getRow(j);
@@ -327,7 +239,6 @@ public void cellColor(Sheet sheet, Cell cell, short indexColor){
     }
     public Object getCell(Cell cell) {
         Object result = "";
-        DecimalFormat dFormat= new DecimalFormat("#,##");
         SimpleDateFormat dateFormat=new SimpleDateFormat("dd.MM");
         switch (cell.getCellType()) {
             case STRING:
@@ -337,7 +248,6 @@ public void cellColor(Sheet sheet, Cell cell, short indexColor){
                 if (DateUtil.isCellDateFormatted(cell)) {
                     result=String.valueOf(dateFormat.format(cell.getDateCellValue()));
                 } else {
-                    //result=String.format("%.2f",cell.getNumericCellValue());
                     result=Math.round(cell.getNumericCellValue()*100)/100.0;
                 }
                 break;
