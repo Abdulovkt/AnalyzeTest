@@ -1,5 +1,6 @@
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.xssf.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellUtil;
 
@@ -25,7 +26,7 @@ public class BookExcel {
         int countRow = 1;
         List<Object> valCell;
         Calendar thisDay = new GregorianCalendar();
-        HSSFWorkbook wb = new HSSFWorkbook();
+        XSSFWorkbook wb = new XSSFWorkbook();
         nameSheet = "Трудозатраты за " + getWeekDate(thisDay);
         System.out.println(nameSheet);
         Sheet sheet = wb.createSheet(nameSheet);
